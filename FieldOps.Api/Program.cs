@@ -2,19 +2,35 @@
 using System.Diagnostics;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Diagnostics;
+using Microsoft.AspNetCore.OpenApi;
+using Scalar.AspNetCore;
 
 var builder = WebApplication.CreateBuilder(args);
+
+// Register endpoints API explorer and OpenAPI
+builder.Services.AddEndpointsApiExplorer();
+builder.Services.AddOpenApi();
+// Services
+builder.Services.AddCors(options =>
+{
+  options.AddPolicy("Dev", policy => policy
+      .WithOrigins("http://localhost:3000", "http://localhost:5173")
+      .AllowAnyHeader()
+      .AllowAnyMethod()
+      .AllowCredentials());
+});
+
 
 // 1) ProblemDetails with traceId on every payload
 builder.Services.AddProblemDetails(options =>
 {
-    options.CustomizeProblemDetails = ctx =>
-    {
-        var traceId = Activity.Current?.Id ?? ctx.HttpContext.TraceIdentifier;
-        ctx.ProblemDetails.Extensions["traceId"] = traceId;
-        ctx.ProblemDetails.Instance ??= ctx.HttpContext.Request.Path;
-        ctx.ProblemDetails.Type ??= "https://tools.ietf.org/html/rfc9110#section-15.6.1";
-    };
+  options.CustomizeProblemDetails = ctx =>
+  {
+    var traceId = Activity.Current?.Id ?? ctx.HttpContext.TraceIdentifier;
+    ctx.ProblemDetails.Extensions["traceId"] = traceId;
+    ctx.ProblemDetails.Instance ??= ctx.HttpContext.Request.Path;
+    ctx.ProblemDetails.Type ??= "https://tools.ietf.org/html/rfc9110#section-15.6.1";
+  };
 });
 
 // 2) Map InvalidOperationException -> 409 via IExceptionHandler
@@ -25,13 +41,20 @@ var app = builder.Build();
 // 3) One consistent error pipeline (all environments)
 app.UseExceptionHandler();   // unhandled + mapped exceptions -> ProblemDetails JSON
 app.UseStatusCodePages();    // 404/405/etc -> ProblemDetails JSON
+app.UseCors("Dev");          // CORS errors -> ProblemDetails JSON
+
+if (app.Environment.IsDevelopment())
+{
+  app.MapOpenApi();           // /openapi/v1.json
+  app.MapScalarApiReference(); // /scalar
+}
 
 // Demo endpoints
 app.MapGet("/ping", () => Results.Ok(new
 {
-    ok = true,
-    runtime = Environment.Version.ToString(),
-    app = "FieldOps.Api"
+  ok = true,
+  runtime = Environment.Version.ToString(),
+  app = "FieldOps.Api"
 }));
 
 app.MapGet("/healthz", () => Results.Ok(new { status = "Healthy" }));
@@ -50,26 +73,26 @@ app.Run();
 // ---- local class for exception mapping ----
 sealed class InvalidOperationToConflictHandler : IExceptionHandler
 {
-    public async ValueTask<bool> TryHandleAsync(HttpContext httpContext, Exception exception, CancellationToken ct)
+  public async ValueTask<bool> TryHandleAsync(HttpContext httpContext, Exception exception, CancellationToken ct)
+  {
+    if (exception is not InvalidOperationException) return false;
+
+    var problemDetailsService = httpContext.RequestServices
+        .GetRequiredService<IProblemDetailsService>();
+
+    httpContext.Response.StatusCode = StatusCodes.Status409Conflict;
+
+    await problemDetailsService.WriteAsync(new ProblemDetailsContext
     {
-        if (exception is not InvalidOperationException) return false;
+      HttpContext = httpContext,
+      ProblemDetails = new ProblemDetails
+      {
+        Title = "Conflict",
+        Status = StatusCodes.Status409Conflict,
+        Detail = exception.Message
+      }
+    });
 
-        var problemDetailsService = httpContext.RequestServices
-            .GetRequiredService<IProblemDetailsService>();
-
-        httpContext.Response.StatusCode = StatusCodes.Status409Conflict;
-
-        await problemDetailsService.WriteAsync(new ProblemDetailsContext
-        {
-            HttpContext = httpContext,
-            ProblemDetails = new ProblemDetails
-            {
-                Title = "Conflict",
-                Status = StatusCodes.Status409Conflict,
-                Detail = exception.Message
-            }
-        });
-
-        return true; // handled
-    }
+    return true; // handled
+  }
 }
