@@ -1,10 +1,12 @@
-// Program.cs (.NET 9) — Built-in ProblemDetails + custom exception mapping
 using System.Diagnostics;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Diagnostics;
 using Scalar.AspNetCore;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
+using FieldOps.Infrastructure;
+using FieldOps.Infrastructure.Entities;
+using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -18,6 +20,13 @@ builder.Services
     .AddCheck("self", () => HealthCheckResult.Healthy(), tags: new[] { "live" })
     // Readiness: start with a placeholder check; we'll add Postgres/Redis later
     .AddCheck("startup-ready", () => HealthCheckResult.Healthy("App bootstrapped."), tags: new[] { "ready" });
+
+var connectionString = builder.Configuration.GetConnectionString("BouncyCastleDatabase")
+    ?? throw new InvalidOperationException("Connection string 'BouncyCastleDatabase' not found.");
+// Use the DbContext from FieldOps.Infrastructure (no local definition here)
+builder.Services.AddDbContext<BouncyCastleDbContext>(options =>
+  options.UseNpgsql(connectionString));
+builder.Services.AddScoped<IRepository<BouncyCastle>, BouncyCastleRepository>();
 
 
 // Services
@@ -46,7 +55,11 @@ builder.Services.AddProblemDetails(options =>
 // 2) Map InvalidOperationException -> 409 via IExceptionHandler
 builder.Services.AddExceptionHandler<InvalidOperationToConflictHandler>();
 
+builder.Services.AddControllers();
+
 var app = builder.Build();
+
+app.MapControllers();
 
 // 3) One consistent error pipeline (all environments)
 app.UseExceptionHandler();   // unhandled + mapped exceptions -> ProblemDetails JSON
