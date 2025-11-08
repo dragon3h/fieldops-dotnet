@@ -5,7 +5,11 @@ using Scalar.AspNetCore;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using FieldOps.Infrastructure;
-using FieldOps.Infrastructure.Entities;
+using FieldOps.Application.Interfaces.IRepositories;
+using FieldOps.Infrastructure.Data;
+using FieldOps.Infrastructure.Services.Repositories;
+using BouncyCastleEntity = FieldOps.Domain.BouncyCastle.BouncyCastle;
+
 using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -24,9 +28,9 @@ builder.Services
 var connectionString = builder.Configuration.GetConnectionString("BouncyCastleDatabase")
     ?? throw new InvalidOperationException("Connection string 'BouncyCastleDatabase' not found.");
 // Use the DbContext from FieldOps.Infrastructure (no local definition here)
-builder.Services.AddDbContext<BouncyCastleDbContext>(options =>
+builder.Services.AddDbContext<FieldOpsDbContext>(options =>
   options.UseNpgsql(connectionString));
-builder.Services.AddScoped<IRepository<BouncyCastle>, BouncyCastleRepository>();
+builder.Services.AddScoped<IRepository<BouncyCastleEntity>, BouncyCastleRepository>();
 
 
 // Services

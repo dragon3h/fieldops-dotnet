@@ -18,6 +18,8 @@
 
   <ItemGroup>
     <ProjectReference Include="..\FieldOps.Infrastructure\FieldOps.Infrastructure.csproj" />
+    <ProjectReference Include="..\FieldOps.Domain\FieldOps.Domain.csproj" />
+    <ProjectReference Include="..\FieldOps.Application\FieldOps.Application.csproj" />
   </ItemGroup>
 
 </Project>
