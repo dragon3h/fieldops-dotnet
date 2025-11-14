@@ -4,5 +4,7 @@ public enum ProductType
 {
   BouncyCastle,
   Mascot,
-  Games
+  Games,
+  FoodMachine,
+  PartyTent,
 }

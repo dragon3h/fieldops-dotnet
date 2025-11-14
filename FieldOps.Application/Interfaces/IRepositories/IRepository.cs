@@ -7,6 +7,6 @@ public interface IRepository<T> : IDisposable where T : IEntity
   Task<IEnumerable<T>> GetAllAsync();
   Task<T?> GetById(Guid id);
   Task<T> Create(T entity);
-  Task<T> Update(T entity);
-  Task<bool> Delete(Guid id);
+  Task<bool> Update(T entity);
+  Task<bool> Delete(T entity);
 }

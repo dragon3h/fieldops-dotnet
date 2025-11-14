@@ -3,7 +3,7 @@ using FieldOps.Domain.Abstractions;
 using FieldOps.Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
 
-namespace FieldOps.Infrastructure.Services.Repositories;
+namespace FieldOps.Infrastructure.Repositories;
 
 public class GenericRepository<T> : IRepository<T> where T : class, IEntity
 {
@@ -29,25 +29,16 @@ public class GenericRepository<T> : IRepository<T> where T : class, IEntity
     // todo: should use cancellation token?
     public async Task<T?> GetById(Guid id)
     {
-        try
-        {
-            return await _dbSet.FirstOrDefaultAsync(e => e.Id == id);
-        }
-        catch (Exception e)
-        {
-            Console.WriteLine(e);
-            throw;
-        };
+        return await _dbSet.FirstOrDefaultAsync(e => e.Id == id);
     }
 
-    public async Task<T> Create(T entity)
+    public async Task<T> Create(T entity)  // on create always return the entity from DB
     {
         await _dbSet.AddAsync(entity);
-        await _context.SaveChangesAsync(); // todo: should this be here or in a unit of work?
-        return entity; // todo? ask what should be returned here, from DB or the entity itself
+        return entity;
     }
 
-    public async Task<T> Update(T entity)
+    public async Task<bool> Update(T entity) // read docs about EF update entity, check Attach method
     {
         var existingEntity = await GetById(entity.Id);
         if (existingEntity == null)
@@ -56,24 +47,24 @@ public class GenericRepository<T> : IRepository<T> where T : class, IEntity
         }
         else
         {
-            _context.Update(entity); // todo: should i first fetch the entity from DB?
-            await  _context.SaveChangesAsync();
-            return entity;
+            _context.Update(entity);
+            return true; // on update always return true or false
         }
     }
 
-    public async Task<bool> Delete(Guid id)
+    public async Task<bool> Delete(T entity)
     {
-        var entity = await GetById(id);
-        if (entity == null)
+        var existingEntity = await GetById(entity.Id);
+        if (existingEntity == null)
         {
             return false;
         }
         else
         {
-            _context.Remove(id);
+            
+            _context.Remove(existingEntity);
             return true;
         }
     }
-    // todo: should i use try/catch in all methods?
+    // todo: should i use try/catch in all methods? - centralized exception handling is better, it is too expensive to have try/catch in all methods
 }

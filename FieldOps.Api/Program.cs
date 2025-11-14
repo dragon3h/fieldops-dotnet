@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using FieldOps.Api.Utils;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Diagnostics;
 using Scalar.AspNetCore;
@@ -6,8 +7,7 @@ using Microsoft.Extensions.Diagnostics.HealthChecks;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using FieldOps.Infrastructure;
 using FieldOps.Application.Interfaces.IRepositories;
-using FieldOps.Infrastructure.Data;
-using FieldOps.Infrastructure.Services.Repositories;
+using FieldOps.Infrastructure.DTOs;
 using BouncyCastleEntity = FieldOps.Domain.BouncyCastle.BouncyCastle;
 
 using Microsoft.EntityFrameworkCore;
@@ -17,6 +17,7 @@ var builder = WebApplication.CreateBuilder(args);
 // Register endpoints API explorer and OpenAPI
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddOpenApi();
+
 // 1) Services — register health checks with tags
 builder.Services
     .AddHealthChecks()
@@ -25,14 +26,8 @@ builder.Services
     // Readiness: start with a placeholder check; we'll add Postgres/Redis later
     .AddCheck("startup-ready", () => HealthCheckResult.Healthy("App bootstrapped."), tags: new[] { "ready" });
 
-var connectionString = builder.Configuration.GetConnectionString("BouncyCastleDatabase")
-    ?? throw new InvalidOperationException("Connection string 'BouncyCastleDatabase' not found.");
-// Use the DbContext from FieldOps.Infrastructure (no local definition here)
-builder.Services.AddDbContext<FieldOpsDbContext>(options =>
-  options.UseNpgsql(connectionString));
-builder.Services.AddScoped<IRepository<BouncyCastleEntity>, BouncyCastleRepository>();
-
-
+builder.Services.AddScoped<IMapper<BouncyCastleEntity,BouncyCastleDTO>, BouncyCastleMapper>();
+builder.Services.AddInfrastructureServices(builder.Configuration);
 // Services
 builder.Services.AddCors(options =>
 {

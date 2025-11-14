@@ -5,7 +5,7 @@ namespace FieldOps.Infrastructure.DTOs;
 
 public class BouncyCastleDTO
 {
-    public Guid Id { get; set; } = Guid.NewGuid();
+    public Guid Id { get; set; }
     public required string Name { get; set; }
     public string Description { get; set; } = string.Empty;
     public bool IsAvailable { get; set; }

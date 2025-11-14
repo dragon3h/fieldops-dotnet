@@ -42,6 +42,10 @@ public class FieldOpsDbContext : DbContext
     modelBuilder.Entity<BouncyCastleEntity>(entity =>
     {
       entity.ToTable("BouncyCastles");
+      
+      entity.HasKey(e => e.Id);
+      entity.Property(e => e.Id)
+        .ValueGeneratedNever();
 
       // Configure Size as owned entity (embedded in BouncyCastles table)
       entity.OwnsOne(e => e.Size, size =>
@@ -57,6 +61,8 @@ public class FieldOpsDbContext : DbContext
     modelBuilder.Entity<ClientEntity>(entity =>
     {
       entity.HasKey(e => e.Id);
+      entity.Property(e => e.Id)
+        .ValueGeneratedNever();
       entity.Property(e => e.FirstName).IsRequired().HasMaxLength(100);
       entity.Property(e => e.LastName).HasMaxLength(100);
       entity.Property(e => e.Description).HasMaxLength(1000);
@@ -91,6 +97,8 @@ public class FieldOpsDbContext : DbContext
     modelBuilder.Entity<OrderEntity>(entity =>
     {
       entity.HasKey(e => e.Id);
+      entity.Property(e => e.Id)
+        .ValueGeneratedNever();
       entity.Property(e => e.OrderNumber).IsRequired().HasMaxLength(50);
       entity.Property(e => e.EventLocation).HasMaxLength(500);
       entity.Property(e => e.Notes).HasMaxLength(2000);
@@ -112,6 +120,8 @@ public class FieldOpsDbContext : DbContext
     modelBuilder.Entity<OrderItem>(entity =>
     {
       entity.HasKey(e => e.Id);
+      entity.Property(e => e.Id)
+        .ValueGeneratedNever();
       entity.Property(e => e.RentalPricePerUnit).HasPrecision(18, 2);
       entity.Property(e => e.DepositPricePerUnit).HasPrecision(18, 2);
 
@@ -124,6 +134,8 @@ public class FieldOpsDbContext : DbContext
     modelBuilder.Entity<PaymentEntity>(entity =>
     {
       entity.HasKey(e => e.Id);
+      entity.Property(e => e.Id)
+        .ValueGeneratedNever();
       entity.Property(e => e.Amount).HasPrecision(18, 2);
       entity.Property(e => e.PaymentMethod).HasMaxLength(50);
       entity.Property(e => e.TransactionId).HasMaxLength(200);

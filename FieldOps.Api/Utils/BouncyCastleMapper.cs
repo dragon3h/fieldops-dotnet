@@ -76,12 +76,6 @@ public class BouncyCastleMapper : IMapper<BouncyCastle, BouncyCastleDTO>
 
     public List<BouncyCastleDTO> MapList(List<BouncyCastle> source)
     {
-        var dtoList = new List<BouncyCastleDTO>();
-        
-        foreach (var item in source)
-        {
-            dtoList.Add(Map(item));
-        }
-        return dtoList;
+        return source.Select(Map).ToList();
     }
 }
