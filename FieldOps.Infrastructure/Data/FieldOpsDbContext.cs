@@ -42,8 +42,7 @@ public class FieldOpsDbContext : DbContext
     modelBuilder.Entity<BouncyCastleEntity>(entity =>
     {
       entity.ToTable("BouncyCastles");
-      
-      entity.HasKey(e => e.Id);
+
       entity.Property(e => e.Id)
         .ValueGeneratedNever();
 
@@ -89,6 +88,7 @@ public class FieldOpsDbContext : DbContext
 
       entity.HasMany(e => e.Payments)
         .WithOne(p => p.Client)
+        
         .HasForeignKey(p => p.ClientId)
         .OnDelete(DeleteBehavior.Restrict);
     });

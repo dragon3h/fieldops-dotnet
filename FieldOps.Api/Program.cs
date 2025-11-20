@@ -1,5 +1,6 @@
 using System.Diagnostics;
 using FieldOps.Api.Utils;
+using FieldOps.Application;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Diagnostics;
 using Scalar.AspNetCore;
@@ -28,6 +29,8 @@ builder.Services
 
 builder.Services.AddScoped<IMapper<BouncyCastleEntity,BouncyCastleDTO>, BouncyCastleMapper>();
 builder.Services.AddInfrastructureServices(builder.Configuration);
+builder.Services.AddApplicationServices();
+
 // Services
 builder.Services.AddCors(options =>
 {
