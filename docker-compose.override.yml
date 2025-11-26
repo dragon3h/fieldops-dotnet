@@ -1,0 +1,21 @@
+services:
+  api:
+    environment:
+      ASPNETCORE_ENVIRONMENT: "Development"
+      ASPNETCORE_URLS: "http://+:5090"
+      ConnectionStrings__DefaultConnection: "Host=db;Port=5432;Database=fieldops_dev;Username=postgres;Password=postgres"
+      MIGRATE_ON_STARTUP: "true"
+    ports:
+      - "5090:5090"
+    depends_on:
+      db:
+        condition: service_healthy
+
+  db:
+    environment:
+      POSTGRES_DB: fieldops_dev
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5

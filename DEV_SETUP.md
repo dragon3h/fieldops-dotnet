@@ -49,6 +49,8 @@ fieldops-dotnet/
 
 ## Quick Start
 
+### Option A: Quick Start (Local .NET + Docker Database)
+
 Get the application running in 5 minutes:
 
 ```bash
@@ -56,7 +58,7 @@ Get the application running in 5 minutes:
 git clone <repository-url>
 cd fieldops-dotnet
 
-# 2. Start PostgreSQL database
+# 2. Start PostgreSQL database only
 cd FieldOps.Infrastructure
 docker compose up -d
 cd ..
@@ -71,7 +73,23 @@ dotnet run --project FieldOps.Api
 # Navigate to https://localhost:7149/scalar
 ```
 
-That's it! The API is now running in development mode.
+### Option B: Quick Start (Full Docker Compose)
+
+Run the entire application stack in Docker:
+
+```bash
+# 1. Clone the repository
+git clone <repository-url>
+cd fieldops-dotnet
+
+# 2. Start the entire stack (API + Database + pgAdmin)
+docker compose up -d
+
+# 3. Open your browser
+# Navigate to http://localhost:5090/scalar
+```
+
+That's it! The API is now running with automatic migrations applied on startup.
 
 ## Detailed Setup
 
@@ -211,6 +229,185 @@ curl http://localhost:5090/api/v1/bouncycastle
 
 **Note:** OpenAPI endpoints are only available in Development mode.
 
+## Docker Development
+
+The project includes comprehensive Docker support for both local development and production deployments.
+
+### Docker Compose Files
+
+The repository contains three Docker Compose configurations:
+
+1. **`docker-compose.yml` (Root)** - Production-ready full stack
+   - API container with multi-stage build
+   - PostgreSQL database with health checks
+   - pgAdmin for database management
+   - Auto-applies migrations on startup
+
+2. **`docker-compose.override.yml`** - Development overrides
+   - Automatically merged with `docker-compose.yml` in development
+   - Configures development environment variables
+   - Enables verbose logging and debugging
+
+3. **`FieldOps.Infrastructure/docker-compose.yml`** - Database only
+   - Standalone PostgreSQL and pgAdmin setup
+   - Use when running API locally via `dotnet run`
+
+### Running with Docker Compose
+
+**Full Stack (Recommended for Testing):**
+```bash
+# Start all services (API + Database + pgAdmin)
+docker compose up -d
+
+# View logs
+docker compose logs -f
+
+# View API logs only
+docker compose logs -f api
+
+# Stop all services
+docker compose down
+
+# Stop and remove volumes (clean slate)
+docker compose down -v
+```
+
+**Database Only (For Local Development):**
+```bash
+# Navigate to Infrastructure folder
+cd FieldOps.Infrastructure
+
+# Start database and pgAdmin only
+docker compose up -d
+
+# Return to root
+cd ..
+
+# Run API locally
+dotnet run --project FieldOps.Api
+```
+
+### Docker Build Targets
+
+The `FieldOps.Api/Dockerfile` includes multiple build targets:
+
+- **`base`** - Runtime base image (for Visual Studio debugging)
+- **`build`** - Build stage with SDK
+- **`publish`** - Release build output
+- **`final`** - Production runtime (default)
+- **`dev`** - Development mode with `dotnet watch` and remote debugging
+
+**Build for production:**
+```bash
+docker build -t fieldops-api:latest -f FieldOps.Api/Dockerfile .
+```
+
+**Build for development:**
+```bash
+docker build -t fieldops-api:dev --target dev -f FieldOps.Api/Dockerfile .
+```
+
+### Environment Variables
+
+When running in Docker, the following environment variables are available:
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `ASPNETCORE_ENVIRONMENT` | Production | Environment name (Development/Staging/Production) |
+| `ASPNETCORE_URLS` | http://+:5090 | URLs to listen on |
+| `ConnectionStrings__DefaultConnection` | (see docker-compose.yml) | PostgreSQL connection string |
+| `MIGRATE_ON_STARTUP` | true | Auto-apply EF migrations on startup |
+
+**Override in docker-compose.override.yml:**
+```yaml
+services:
+  api:
+    environment:
+      MIGRATE_ON_STARTUP: "false"
+      ASPNETCORE_ENVIRONMENT: "Development"
+```
+
+### Migration-on-Startup
+
+The API automatically applies EF Core migrations when running in Docker:
+
+- Enabled via `MIGRATE_ON_STARTUP=true` environment variable
+- Retries up to 12 times (60 seconds total) waiting for database
+- Logs each attempt and shows applied/pending migrations
+- Throws exception if migrations fail after all retries
+
+**Disable auto-migration:**
+```bash
+# Set environment variable
+export MIGRATE_ON_STARTUP=false
+docker compose up
+```
+
+### Visual Studio Docker Support
+
+The solution includes Visual Studio Docker launch profiles:
+
+**Launch with Docker:**
+1. Open `fieldops-dotnet.sln` in Visual Studio 2022
+2. Set launch profile to "Docker" or "Docker Compose"
+3. Press F5 to debug
+
+Visual Studio will:
+- Build the Docker image
+- Start containers
+- Attach the debugger
+- Open browser to http://localhost:5090/scalar
+
+### Development with dotnet watch in Docker
+
+For hot-reload development in Docker:
+
+```bash
+# Build dev image
+docker build -t fieldops-api:dev --target dev -f FieldOps.Api/Dockerfile .
+
+# Run with source code mounted
+docker run -it --rm \
+  -p 5090:5090 \
+  -v $(pwd):/src \
+  -e ASPNETCORE_ENVIRONMENT=Development \
+  -e ConnectionStrings__DefaultConnection="Host=host.docker.internal;Port=5433;Database=fieldops_dev;Username=postgres;Password=postgres" \
+  fieldops-api:dev
+```
+
+Code changes will automatically trigger recompilation.
+
+### Docker Networking
+
+When running services in Docker Compose:
+
+- **API → Database:** Use hostname `db` (internal Docker network)
+- **Host → API:** Use `localhost:5090` (port forwarding)
+- **Host → Database:** Use `localhost:5433` (port forwarding)
+- **pgAdmin → Database:** Use hostname `db` and port `5432` (internal)
+
+### Health Checks
+
+The database includes a health check in docker-compose.yml:
+
+```yaml
+db:
+  healthcheck:
+    test: ["CMD-SHELL", "pg_isready -U postgres"]
+    interval: 10s
+    timeout: 5s
+    retries: 5
+```
+
+The API waits for the database to be healthy before starting:
+
+```yaml
+api:
+  depends_on:
+    db:
+      condition: service_healthy
+```
+
 ## Troubleshooting
 
 ### Database Connection Issues
@@ -295,6 +492,13 @@ dotnet tool update --global dotnet-ef
 
 # Verify installation
 dotnet ef --version
+```
+
+# Add EF tools to a project if you need Package Manager commands
+Install-Package Microsoft.EntityFrameworkCore.Tools -ProjectName FieldOps.Api
+
+# Then run the EF PMC command (from PM Console)
+Update-Database -Project FieldOps.Infrastructure -StartupProject FieldOps.Api
 ```
 
 ## Development Workflows

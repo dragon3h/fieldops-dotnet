@@ -28,17 +28,15 @@ public class BouncyCastleService(IUnitOfWork unitOfWork) : IBouncyCastleService
         return castle;
     }
     
-    // how to handle async void?
-    public async void UpdateBouncyCastleAsync(BouncyCastle castle)
+    public async Task UpdateBouncyCastleAsync(BouncyCastle castle)
     {
         castle.UpdatedAt = DateTime.UtcNow;
         castle.UpdatedBy = "system"; // TODO: replace with actual user
         await unitOfWork.BouncyCastleRepository.Update(castle);
         await unitOfWork.CompleteAsync();
     }
-    
-    // how to handle async void?
-    public async void DeleteBouncyCastleAsync(BouncyCastle castle)
+
+    public async Task DeleteBouncyCastleAsync(BouncyCastle castle)
     {
         await unitOfWork.BouncyCastleRepository.Delete(castle);
         await unitOfWork.CompleteAsync();

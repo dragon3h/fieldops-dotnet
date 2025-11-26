@@ -1,5 +1,6 @@
+version: '3.8'
 services:
-  postgres:
+  db:
     image: postgres:17-alpine
     container_name: fieldops-postgres
     environment:
@@ -25,7 +26,25 @@ services:
     ports:
       - '5050:80'
     depends_on:
-      - postgres
+      - db
+
+  fieldops-api:
+    build:
+      context: ..
+      dockerfile: FieldOps.Api/Dockerfile
+    image: fieldops-api:local
+    container_name: fieldops-api
+    environment:
+      ASPNETCORE_ENVIRONMENT: Development
+      MIGRATE_ON_STARTUP: "true"
+      ConnectionStrings__DefaultConnection: "Host=db;Port=5432;Database=fieldops_dev;Username=postgres;Password=postgres"
+    ports:
+      - '5090:5090'
+      - '7149:7149'
+    depends_on:
+      db:
+        condition: service_healthy
+    restart: on-failure
 
 volumes:
   postgres_data:

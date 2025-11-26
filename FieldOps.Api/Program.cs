@@ -7,11 +7,14 @@ using Scalar.AspNetCore;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using FieldOps.Infrastructure;
+using FieldOps.Infrastructure.Data;
 using FieldOps.Application.Interfaces.IRepositories;
 using FieldOps.Infrastructure.DTOs;
 using BouncyCastleEntity = FieldOps.Domain.BouncyCastle.BouncyCastle;
 
 using Microsoft.EntityFrameworkCore;
+
+using Infra = FieldOps.Infrastructure;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -28,7 +31,7 @@ builder.Services
     .AddCheck("startup-ready", () => HealthCheckResult.Healthy("App bootstrapped."), tags: new[] { "ready" });
 
 builder.Services.AddScoped<IMapper<BouncyCastleEntity,BouncyCastleDTO>, BouncyCastleMapper>();
-builder.Services.AddInfrastructureServices(builder.Configuration);
+Infra.DependencyInjection.AddInfrastructureServices(builder.Services, builder.Configuration);
 builder.Services.AddApplicationServices();
 
 // Services
@@ -62,6 +65,58 @@ builder.Services.AddControllers();
 var app = builder.Build();
 
 app.MapControllers();
+
+// Apply EF Core migrations at startup when enabled via env/config "MIGRATE_ON_STARTUP"
+var migrateOnStartup = builder.Configuration.GetValue<bool>("MIGRATE_ON_STARTUP", false)
+                    || Environment.GetEnvironmentVariable("MIGRATE_ON_STARTUP") == "true";
+
+if (migrateOnStartup)
+{
+  using var scope = app.Services.CreateScope();
+  var db = scope.ServiceProvider.GetRequiredService<FieldOpsDbContext>();
+
+  const int maxAttempts = 12;
+  const int delayMs = 5000;
+  var attempt = 0;
+  Exception? lastEx = null;
+
+  while (attempt < maxAttempts)
+  {
+    try
+    {
+      attempt++;
+      app.Logger.LogInformation("Attempting database migrate (attempt {Attempt}/{Max})...", attempt, maxAttempts);
+      db.Database.Migrate();
+
+      var applied = db.Database.GetAppliedMigrations().ToList();
+      var pending = db.Database.GetPendingMigrations().ToList();
+      if (pending.Any())
+      {
+        app.Logger.LogWarning("Pending migrations after migrate attempt: {Migrations}", string.Join(", ", pending));
+      }
+      else
+      {
+        app.Logger.LogInformation("All migrations applied on startup. Applied migrations: {Count}", applied.Count);
+      }
+
+      app.Logger.LogInformation("Database migrations applied on startup.");
+      lastEx = null;
+      break;
+    }
+    catch (Exception ex)
+    {
+      lastEx = ex;
+      app.Logger.LogWarning(ex, "Database migrate attempt {Attempt} failed. Waiting {Delay}ms before retry.", attempt, delayMs);
+      await Task.Delay(delayMs);
+    }
+  }
+
+  if (lastEx != null)
+  {
+    app.Logger.LogError(lastEx, "Database migration failed after {MaxAttempts} attempts.", maxAttempts);
+    throw lastEx;
+  }
+}
 
 // 3) One consistent error pipeline (all environments)
 app.UseExceptionHandler();   // unhandled + mapped exceptions -> ProblemDetails JSON

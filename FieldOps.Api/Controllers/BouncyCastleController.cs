@@ -22,8 +22,7 @@ public class BouncyCastleController : ControllerBase
 
     // GET: api/v1/bouncycastle
     [HttpGet]
-    public async Task<ActionResult<List<BouncyCastleDTO>>>
-        GetAll() // what is better here: ActionResult<List<BouncyCastleDTO>> or ActionResult<BouncyCastleDTO> or IActionResult?
+    public async Task<ActionResult<List<BouncyCastleDTO>>> GetAll() // what is better here: ActionResult<List<BouncyCastleDTO>> or ActionResult<BouncyCastleDTO> or IActionResult?
     {
         var castleList = await _bouncyCastleService.GetAllBouncyCastlesAsync();
 
@@ -76,7 +75,7 @@ public class BouncyCastleController : ControllerBase
         }
 
         var mappedCastle = _mapper.MapForUpdate(existingCastle, castle);
-        _bouncyCastleService.UpdateBouncyCastleAsync(mappedCastle);
+        await _bouncyCastleService.UpdateBouncyCastleAsync(mappedCastle);
 
         return NoContent();
     }
@@ -92,7 +91,7 @@ public class BouncyCastleController : ControllerBase
             return NotFound();
         }
 
-        _bouncyCastleService.DeleteBouncyCastleAsync(castle);
+        await _bouncyCastleService.DeleteBouncyCastleAsync(castle);
 
         return NoContent();
     }
