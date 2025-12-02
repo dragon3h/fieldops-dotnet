@@ -7,11 +7,13 @@ public class UnitOfWork : IUnitOfWork
 {
     private readonly FieldOpsDbContext _fieldOpsDbContext;
     public IBouncyCastleRepository BouncyCastleRepository { get; }
+    public IClientRepository ClientRepository { get; }
 
-    public UnitOfWork(FieldOpsDbContext fieldOpsDbContext)
+    public UnitOfWork(FieldOpsDbContext fieldOpsDbContext, IBouncyCastleRepository bouncyCastleRepository, IClientRepository clientRepository)
     {
         _fieldOpsDbContext = fieldOpsDbContext;
-        BouncyCastleRepository = new BouncyCastleRepository(_fieldOpsDbContext);
+        BouncyCastleRepository = bouncyCastleRepository;
+        ClientRepository = clientRepository;
     }
 
     public async Task CompleteAsync()

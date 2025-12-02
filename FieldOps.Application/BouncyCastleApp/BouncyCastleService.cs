@@ -14,7 +14,9 @@ public class BouncyCastleService(IUnitOfWork unitOfWork) : IBouncyCastleService
     
     public async Task<BouncyCastle?> GetBouncyCastleByIdAsync(Guid id)
     {
-        return await unitOfWork.BouncyCastleRepository.GetById(id);
+        var castle = await unitOfWork.BouncyCastleRepository.GetByIdAsync(id);
+
+        return castle;
     }
     
     public async Task<BouncyCastle> CreateBouncyCastleAsync(BouncyCastle castle)
@@ -22,7 +24,7 @@ public class BouncyCastleService(IUnitOfWork unitOfWork) : IBouncyCastleService
         castle.Id = Guid.NewGuid();
         castle.CreatedAt = DateTime.UtcNow;
         castle.CreatedBy = "system"; // TODO: replace with actual user
-        await unitOfWork.BouncyCastleRepository.Create(castle);
+        await unitOfWork.BouncyCastleRepository.CreateAsync(castle);
         await unitOfWork.CompleteAsync();
         
         return castle;
@@ -32,13 +34,13 @@ public class BouncyCastleService(IUnitOfWork unitOfWork) : IBouncyCastleService
     {
         castle.UpdatedAt = DateTime.UtcNow;
         castle.UpdatedBy = "system"; // TODO: replace with actual user
-        await unitOfWork.BouncyCastleRepository.Update(castle);
+        await unitOfWork.BouncyCastleRepository.UpdateAsync(castle);
         await unitOfWork.CompleteAsync();
     }
 
     public async Task DeleteBouncyCastleAsync(BouncyCastle castle)
     {
-        await unitOfWork.BouncyCastleRepository.Delete(castle);
+        await unitOfWork.BouncyCastleRepository.DeleteAsync(castle);
         await unitOfWork.CompleteAsync();
     }
 }

@@ -1,5 +1,4 @@
 using System.Diagnostics;
-using FieldOps.Api.Utils;
 using FieldOps.Application;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Diagnostics;
@@ -9,12 +8,12 @@ using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using FieldOps.Infrastructure;
 using FieldOps.Infrastructure.Data;
 using FieldOps.Application.Interfaces.IRepositories;
-using FieldOps.Infrastructure.DTOs;
 using BouncyCastleEntity = FieldOps.Domain.BouncyCastle.BouncyCastle;
 
 using Microsoft.EntityFrameworkCore;
 
 using Infra = FieldOps.Infrastructure;
+using FieldOps.Application.DTOs;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -29,8 +28,6 @@ builder.Services
     .AddCheck("self", () => HealthCheckResult.Healthy(), tags: new[] { "live" })
     // Readiness: start with a placeholder check; we'll add Postgres/Redis later
     .AddCheck("startup-ready", () => HealthCheckResult.Healthy("App bootstrapped."), tags: new[] { "ready" });
-
-builder.Services.AddScoped<IMapper<BouncyCastleEntity,BouncyCastleDTO>, BouncyCastleMapper>();
 Infra.DependencyInjection.AddInfrastructureServices(builder.Services, builder.Configuration);
 builder.Services.AddApplicationServices();
 

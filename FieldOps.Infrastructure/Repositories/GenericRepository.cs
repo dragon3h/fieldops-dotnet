@@ -27,20 +27,20 @@ public class GenericRepository<T> : IRepository<T> where T : class, IEntity
     }
 
     // todo: should use cancellation token?
-    public async Task<T?> GetById(Guid id)
+    public async Task<T?> GetByIdAsync(Guid id)
     {
         return await _dbSet.FirstOrDefaultAsync(e => e.Id == id);
     }
 
-    public async Task<T> Create(T entity)  // on create always return the entity from DB
+    public async Task<T> CreateAsync(T entity)  // on create always return the entity from DB
     {
         await _dbSet.AddAsync(entity);
         return entity;
     }
 
-    public async Task<bool> Update(T entity) // read docs about EF update entity, check Attach method
+    public async Task<bool> UpdateAsync(T entity) // read docs about EF update entity, check Attach method
     {
-        var existingEntity = await GetById(entity.Id);
+        var existingEntity = await GetByIdAsync(entity.Id);
         if (existingEntity == null)
         {
             throw new InvalidOperationException($"Entity with id {entity.Id} does not exist.");
@@ -52,9 +52,9 @@ public class GenericRepository<T> : IRepository<T> where T : class, IEntity
         }
     }
 
-    public async Task<bool> Delete(T entity)
+    public async Task<bool> DeleteAsync(T entity)
     {
-        var existingEntity = await GetById(entity.Id);
+        var existingEntity = await GetByIdAsync(entity.Id);
         if (existingEntity == null)
         {
             return false;

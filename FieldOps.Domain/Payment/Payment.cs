@@ -1,4 +1,5 @@
 using FieldOps.Domain.Abstractions;
+using FieldOps.Domain.Orders;
 
 namespace FieldOps.Domain.Payment;
 
@@ -7,7 +8,7 @@ public sealed class Payment : BaseEntity, ITracker
     public Guid ClientId { get; set; }
     public Client.Client? Client { get; set; }
     public Guid OrderId { get; set; }
-    public Order.Order? Order { get; set; }
+    public Order? Order { get; set; }
     public decimal Amount { get; set; }
     public DateTime PaymentDate { get; set; }
     public string? PaymentMethod { get; set; }

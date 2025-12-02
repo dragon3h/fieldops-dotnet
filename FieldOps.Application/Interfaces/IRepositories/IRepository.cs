@@ -5,8 +5,8 @@ namespace FieldOps.Application.Interfaces.IRepositories;
 public interface IRepository<T> : IDisposable where T : IEntity
 {
   Task<IEnumerable<T>> GetAllAsync();
-  Task<T?> GetById(Guid id);
-  Task<T> Create(T entity);
-  Task<bool> Update(T entity);
-  Task<bool> Delete(T entity);
+  Task<T?> GetByIdAsync(Guid id);
+  Task<T> CreateAsync(T entity);
+  Task<bool> UpdateAsync(T entity);
+  Task<bool> DeleteAsync(T entity);
 }

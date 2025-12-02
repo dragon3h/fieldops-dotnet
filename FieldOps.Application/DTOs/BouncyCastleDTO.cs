@@ -1,7 +1,7 @@
 using FieldOps.Domain.BouncyCastle;
 using FieldOps.Domain.Shared;
 
-namespace FieldOps.Infrastructure.DTOs;
+namespace FieldOps.Application.DTOs;
 
 public class BouncyCastleDTO
 {

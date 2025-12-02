@@ -1,6 +1,6 @@
 using FieldOps.Domain.Abstractions;
 
-namespace FieldOps.Domain.Order;
+namespace FieldOps.Domain.Orders;
 
 public sealed class Order : BaseEntity, ITracker
 {
