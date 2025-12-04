@@ -18,14 +18,14 @@ FROM mcr.microsoft.com/dotnet/sdk:9.0 AS build
 WORKDIR /src
 
 # copy csproj files and restore to leverage Docker layer caching
-COPY ["FieldOps.Api/FieldOps.Api.csproj", "FieldOps.Api/"]
-COPY ["FieldOps.Application/FieldOps.Application.csproj", "FieldOps.Application/"]
-COPY ["FieldOps.Domain/FieldOps.Domain.csproj", "FieldOps.Domain/"]
-COPY ["FieldOps.Infrastructure/FieldOps.Infrastructure.csproj", "FieldOps.Infrastructure/"]
+COPY ["src/FieldOps.Api/FieldOps.Api.csproj", "FieldOps.Api/"]
+COPY ["src/FieldOps.Application/FieldOps.Application.csproj", "FieldOps.Application/"]
+COPY ["src/FieldOps.Domain/FieldOps.Domain.csproj", "FieldOps.Domain/"]
+COPY ["src/FieldOps.Infrastructure/FieldOps.Infrastructure.csproj", "FieldOps.Infrastructure/"]
 RUN dotnet restore "FieldOps.Api/FieldOps.Api.csproj"
 
 # Copy source and build
-COPY . .
+COPY ./src .
 WORKDIR "/src/FieldOps.Api"
 RUN dotnet build "FieldOps.Api.csproj" -c Debug -o /app/build
 

@@ -9,16 +9,11 @@ public class GenericRepository<T> : IRepository<T> where T : class, IEntity
 {
     private readonly FieldOpsDbContext _context;
     private readonly DbSet<T> _dbSet;
-    
+
     public GenericRepository(FieldOpsDbContext context)
     {
         _context = context;
         _dbSet = _context.Set<T>();
-    }
-    
-    public void Dispose()
-    {
-        _context?.Dispose();
     }
 
     public virtual async Task<IEnumerable<T>> GetAllAsync()
@@ -61,7 +56,7 @@ public class GenericRepository<T> : IRepository<T> where T : class, IEntity
         }
         else
         {
-            
+
             _context.Remove(existingEntity);
             return true;
         }

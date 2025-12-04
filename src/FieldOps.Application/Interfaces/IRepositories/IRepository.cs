@@ -2,7 +2,7 @@ using FieldOps.Domain.Abstractions;
 
 namespace FieldOps.Application.Interfaces.IRepositories;
 
-public interface IRepository<T> : IDisposable where T : IEntity
+public interface IRepository<T> where T : IEntity
 {
   Task<IEnumerable<T>> GetAllAsync();
   Task<T?> GetByIdAsync(Guid id);

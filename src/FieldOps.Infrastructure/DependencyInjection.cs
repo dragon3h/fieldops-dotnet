@@ -13,7 +13,7 @@ namespace FieldOps.Infrastructure
     public static IServiceCollection AddInfrastructureServices(this IServiceCollection services, IConfiguration configuration)
     {
       // Resolve connection string deterministically from configuration, falling back to env var.
-      var connectionString = configuration.GetConnectionString("DefaultConnection")
+      var connectionString = configuration.GetConnectionString("BouncyCastleDatabase")
                              ?? Environment.GetEnvironmentVariable("ConnectionStrings__DefaultConnection")
                              ?? throw new InvalidOperationException("Connection string 'DefaultConnection' not found.");
 
@@ -27,11 +27,14 @@ namespace FieldOps.Infrastructure
             errorCodesToAdd: null);
         }));
 
-      // Register repositories and unit-of-work so application services can be resolved.
-      services.AddScoped<IUnitOfWork, UnitOfWork>();
-      services.AddScoped(typeof(IRepository<>), typeof(GenericRepository<>));
+      // Register specific repositories
+      services.AddScoped<IBouncyCastleRepository, BouncyCastleRepository>();
+      services.AddScoped<IClientRepository, ClientRepository>();
 
-      // register other infrastructure services here...
+      // Register generic repository and unit of work
+      services.AddScoped(typeof(IRepository<>), typeof(GenericRepository<>));
+      services.AddScoped<IUnitOfWork, UnitOfWork>();
+
       return services;
     }
   }

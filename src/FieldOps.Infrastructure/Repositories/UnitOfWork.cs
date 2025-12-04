@@ -23,4 +23,8 @@ public class UnitOfWork : IUnitOfWork
         await _fieldOpsDbContext.SaveChangesAsync();
     }
 
+    public void Dispose()
+    {
+        _fieldOpsDbContext.Dispose();
+    }
 }

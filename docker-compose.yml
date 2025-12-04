@@ -2,7 +2,7 @@ services:
   api:
     build:
       context: .
-      dockerfile: FieldOps.Api/Dockerfile
+      dockerfile: src/FieldOps.Api/Dockerfile
       target: final
     image: fieldops-api:latest
     container_name: fieldops-api

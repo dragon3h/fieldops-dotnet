@@ -1,6 +1,6 @@
 namespace FieldOps.Application.Interfaces.IRepositories;
 
-public interface IUnitOfWork
+public interface IUnitOfWork : IDisposable
 {
     IBouncyCastleRepository BouncyCastleRepository { get; }
     
