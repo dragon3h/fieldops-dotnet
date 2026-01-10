@@ -1,6 +1,5 @@
 using Microsoft.AspNetCore.Mvc;
 using FieldOps.Domain.BouncyCastle;
-using FieldOps.Application.Interfaces.IRepositories;
 using FieldOps.Application.Interfaces.IServices;
 using FieldOps.Application.DTOs;
 using AutoMapper;
@@ -9,38 +8,26 @@ namespace FieldOps.Api.Controllers;
 
 [ApiController]
 [Route("api/v1/[controller]")]
-public class BouncyCastleController : ControllerBase
+public class BouncyCastleController(IBouncyCastleService bouncyCastleService, IMapper mapper) : ControllerBase
 {
-    private readonly IMapper _mapper;
-    private readonly IBouncyCastleService _bouncyCastleService;
-
-    public BouncyCastleController(IBouncyCastleService bouncyCastleService,
-        IMapper mapper)
-    {
-        _bouncyCastleService = bouncyCastleService;
-        _mapper = mapper;
-    }
+    private readonly IMapper _mapper = mapper;
+    private readonly IBouncyCastleService _bouncyCastleService = bouncyCastleService;
 
     // GET: api/v1/bouncycastle
     [HttpGet]
     public async Task<ActionResult<List<BouncyCastleDTO>>> GetAll()
     {
-        var castleList = await _bouncyCastleService.GetAllBouncyCastlesAsync();
+        var castleList = await _bouncyCastleService.GetAllAsync() ?? new List<BouncyCastle>();
 
-        if (castleList == null)
-        {
-            return NotFound();
-        }
-
-        var castleListRequest = _mapper.Map<List<BouncyCastleDTO>>(castleList);
-        return Ok(castleListRequest);
+        var castleListResponse = _mapper.Map<List<BouncyCastleDTO>>(castleList);
+        return Ok(castleListResponse);
     }
 
     // GET: api/v1/bouncycastle/{id}
     [HttpGet("{id:guid}")]
     public async Task<ActionResult<BouncyCastleDTO>> GetById(Guid id)
     {
-        var castle = await _bouncyCastleService.GetBouncyCastleByIdAsync(id);
+        var castle = await _bouncyCastleService.GetByIdAsync(id);
 
         if (castle == null)
         {
@@ -58,7 +45,7 @@ public class BouncyCastleController : ControllerBase
     {
         var castleEntity = _mapper.Map<BouncyCastle>(castle);
 
-        var createdCastle = await _bouncyCastleService.CreateBouncyCastleAsync(castleEntity);
+        var createdCastle = await _bouncyCastleService.CreateAsync(castleEntity);
 
         return CreatedAtAction(nameof(GetById), new { id = createdCastle.Id },
             _mapper.Map<BouncyCastleDTO>(createdCastle));
@@ -68,7 +55,11 @@ public class BouncyCastleController : ControllerBase
     [HttpPut("{id:guid}")]
     public async Task<IActionResult> Update(Guid id, BouncyCastleDTO castle)
     {
-        var existingCastle = await _bouncyCastleService.GetBouncyCastleByIdAsync(id);
+        var existingCastle = await _bouncyCastleService.GetByIdAsync(id);
+        if (id != castle.Id)
+        {
+            return BadRequest();
+        }
 
         if (existingCastle == null)
         {
@@ -76,7 +67,7 @@ public class BouncyCastleController : ControllerBase
         }
 
         var mappedCastle = _mapper.Map(castle, existingCastle);
-        await _bouncyCastleService.UpdateBouncyCastleAsync(mappedCastle);
+        await _bouncyCastleService.UpdateAsync(mappedCastle);
 
         return NoContent();
     }
@@ -85,14 +76,14 @@ public class BouncyCastleController : ControllerBase
     [HttpDelete("{id:guid}")]
     public async Task<IActionResult> Delete(Guid id)
     {
-        var castle = await _bouncyCastleService.GetBouncyCastleByIdAsync(id);
+        var castle = await _bouncyCastleService.GetByIdAsync(id);
 
         if (castle == null)
         {
             return NotFound();
         }
 
-        await _bouncyCastleService.DeleteBouncyCastleAsync(castle);
+        await _bouncyCastleService.DeleteAsync(castle);
 
         return NoContent();
     }

@@ -36,6 +36,7 @@ public class GenericRepository<T> : IRepository<T> where T : class, IEntity
     public async Task<bool> UpdateAsync(T entity) // read docs about EF update entity, check Attach method
     {
         var existingEntity = await GetByIdAsync(entity.Id);
+        // todo: in future we should use centralized Error Handling Middleware, so maybe we should not throw exception here
         if (existingEntity == null)
         {
             throw new InvalidOperationException($"Entity with id {entity.Id} does not exist.");
@@ -52,7 +53,7 @@ public class GenericRepository<T> : IRepository<T> where T : class, IEntity
         var existingEntity = await GetByIdAsync(entity.Id);
         if (existingEntity == null)
         {
-            return false;
+            throw new InvalidOperationException($"Entity with id {entity.Id} does not exist.");
         }
         else
         {

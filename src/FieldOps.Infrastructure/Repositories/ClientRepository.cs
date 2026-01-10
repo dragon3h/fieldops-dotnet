@@ -4,10 +4,6 @@ using FieldOps.Infrastructure.Data;
 
 namespace FieldOps.Infrastructure.Repositories;
 
-public class ClientRepository : GenericRepository<Client>, IClientRepository
-{
-    public ClientRepository(FieldOpsDbContext context) : base(context)
-    {
-    }
-    // add client specific methods here
+public class ClientRepository(FieldOpsDbContext context) : GenericRepository<Client>(context), IClientRepository
+{    // add client specific methods here
 }
