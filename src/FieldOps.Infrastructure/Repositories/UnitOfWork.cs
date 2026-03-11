@@ -3,28 +3,24 @@ using FieldOps.Infrastructure.Data;
 
 namespace FieldOps.Infrastructure.Repositories;
 
-public class UnitOfWork : IUnitOfWork
+public class UnitOfWork(
+    FieldOpsDbContext fieldOpsDbContext,
+    IBouncyCastleRepository bouncyCastleRepository,
+    IClientRepository clientRepository)
+    : IUnitOfWork
 {
-    private readonly FieldOpsDbContext _fieldOpsDbContext;
-    public IBouncyCastleRepository BouncyCastleRepository { get; }
-    public IClientRepository ClientRepository { get; }
-
-    public UnitOfWork(FieldOpsDbContext fieldOpsDbContext, IBouncyCastleRepository bouncyCastleRepository, IClientRepository clientRepository)
-    {
-        _fieldOpsDbContext = fieldOpsDbContext;
-        BouncyCastleRepository = bouncyCastleRepository;
-        ClientRepository = clientRepository;
-    }
+    public IBouncyCastleRepository BouncyCastleRepository { get; } = bouncyCastleRepository;
+    public IClientRepository ClientRepository { get; } = clientRepository;
 
     public async Task CompleteAsync()
     {
         // For simple operations, EF Core handles transactions implicitly
         // SaveChangesAsync() wraps all changes in a single transaction automatically
-        await _fieldOpsDbContext.SaveChangesAsync();
+        await fieldOpsDbContext.SaveChangesAsync();
     }
 
     public void Dispose()
     {
-        _fieldOpsDbContext.Dispose();
+        fieldOpsDbContext.Dispose();
     }
 }

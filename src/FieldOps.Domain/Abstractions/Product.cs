@@ -5,7 +5,7 @@ namespace FieldOps.Domain.Abstractions;
 public abstract class Product : BaseEntity, ITracker
 {
     public required string Name { get; set; }
-    public string Description { get; set; }
+    public string Description { get; set; } = string.Empty;
     public bool IsAvailable { get; set; }
     public decimal PurchasePrice { get; set; }
     public decimal ResalePrice { get; set; }

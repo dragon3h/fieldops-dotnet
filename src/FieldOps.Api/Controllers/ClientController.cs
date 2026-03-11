@@ -9,24 +9,15 @@ namespace FieldOps.Api.Controllers;
 
 [ApiController]
 [Route("api/v1/[controller]")]
-public class ClientController : ControllerBase
+public class ClientController(IMapper mapper, IClientService clientService) : ControllerBase
 {
-    private readonly IMapper _mapper;
-    private readonly IClientService _clientService;
-
-    public ClientController(IMapper mapper, IClientService clientService)
-    {
-        _mapper = mapper;
-        _clientService = clientService;
-    }
-
     // GET: api/v1/client
     [HttpGet]
     public async Task<ActionResult<List<ClientDTO>>> GetClients()
     {
-        var clientList = await _clientService.GetAllClientsAsync();
+        var clientList = await clientService.GetAllClientsAsync();
 
-        var clientDtos = _mapper.Map<List<ClientDTO>>(clientList);
+        var clientDtos = mapper.Map<List<ClientDTO>>(clientList);
         return Ok(clientDtos);
     }
 
@@ -34,12 +25,12 @@ public class ClientController : ControllerBase
     [HttpGet("{id:guid}")]
     public async Task<ActionResult<ClientDTO>> GetClientById(Guid id)
     {
-        var client = await _clientService.GetClientByIdAsync(id);
+        var client = await clientService.GetClientByIdAsync(id);
         if (client == null)
         {
             return NotFound();
         }
-        var clientDto = _mapper.Map<ClientDTO>(client);
+        var clientDto = mapper.Map<ClientDTO>(client);
         return Ok(clientDto);
     }
 
@@ -47,9 +38,9 @@ public class ClientController : ControllerBase
     [HttpPost]
     public async Task<ActionResult<ClientDTO>> CreateClient(ClientDTO clientDto)
     {
-        var clientEntity = _mapper.Map<Client>(clientDto);
-        var createdClient = await _clientService.CreateClientAsync(clientEntity);
-        var createdClientDto = _mapper.Map<ClientDTO>(createdClient);
+        var clientEntity = mapper.Map<Client>(clientDto);
+        var createdClient = await clientService.CreateClientAsync(clientEntity);
+        var createdClientDto = mapper.Map<ClientDTO>(createdClient);
         return CreatedAtAction(nameof(GetClientById), new { id = createdClientDto.Id }, createdClientDto);
     }
 
@@ -61,14 +52,14 @@ public class ClientController : ControllerBase
         {
             return BadRequest();
         }
-        var clientEntity = _mapper.Map<Client>(clientDto);
+        var clientEntity = mapper.Map<Client>(clientDto);
 
-        if (await _clientService.GetClientByIdAsync(id) == null)
+        if (await clientService.GetClientByIdAsync(id) == null)
         {
             return NotFound();
         }
 
-        await _clientService.UpdateClientAsync(clientEntity);
+        await clientService.UpdateClientAsync(clientEntity);
         return NoContent();
     }
 
@@ -76,12 +67,12 @@ public class ClientController : ControllerBase
     [HttpDelete("{id:guid}")]
     public async Task<IActionResult> DeleteClient(Guid id)
     {
-        var client = await _clientService.GetClientByIdAsync(id);
+        var client = await clientService.GetClientByIdAsync(id);
         if (client == null)
         {
             return NotFound();
         }
-        await _clientService.DeleteClientAsync(client);
+        await clientService.DeleteClientAsync(client);
         return NoContent();
     }
 }
