@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using FieldOps.Application.DTOs;
 
 namespace FieldOps.Application.Interfaces.IServices
 {
@@ -14,5 +15,6 @@ namespace FieldOps.Application.Interfaces.IServices
         Task<Client> CreateClientAsync(Client client);
         Task UpdateClientAsync(Client client);
         Task DeleteClientAsync(Client client);
+        Task<Client?> PatchClientAsync(Guid id, PatchClientDTO patchClientDto);
     }
 }

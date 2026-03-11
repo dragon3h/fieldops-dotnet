@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using FieldOps.Application.DTOs;
 
 namespace FieldOps.Application.ClientApp;
 
@@ -48,5 +49,31 @@ public class ClientService(IUnitOfWork unitOfWork) : IClientService
         client.UpdatedBy = "system"; // This should ideally come from the authenticated user context
         await unitOfWork.ClientRepository.UpdateAsync(client);
         await unitOfWork.CompleteAsync();
+    }
+    
+    public async Task<Client?> PatchClientAsync(Guid id, PatchClientDTO patchClientDto)
+    {
+        var existingClient = await GetClientByIdAsync(id);
+        if (existingClient == null)
+        {
+            return null;
+        }
+
+        existingClient.UpdatedAt = DateTime.UtcNow;
+        existingClient.UpdatedBy = "system"; // This should ideally come from the authenticated user context
+
+        foreach (var prop in patchClientDto.GetType().GetProperties())
+        {
+            if (prop.GetValue(patchClientDto) != null)
+            {
+                existingClient.GetType().GetProperty(prop.Name)?.SetValue(existingClient, prop.GetValue(patchClientDto));
+            }
+        }
+        
+        
+        await unitOfWork.ClientRepository.UpdateAsync(existingClient);
+        await unitOfWork.CompleteAsync();
+        
+        return  existingClient;
     }
 }

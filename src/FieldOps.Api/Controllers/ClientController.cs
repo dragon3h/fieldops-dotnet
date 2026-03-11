@@ -62,6 +62,19 @@ public class ClientController(IMapper mapper, IClientService clientService) : Co
         await clientService.UpdateClientAsync(clientEntity);
         return NoContent();
     }
+    
+    // PATCH: api/v1/client/{id}
+    [HttpPatch("{id:guid}")]
+    public async Task<IActionResult> PatchClient(Guid id, PatchClientDTO patchClientDto)
+    {
+        var existingClient = await clientService.PatchClientAsync(id, patchClientDto);
+        if (existingClient == null)
+        {
+            return NotFound();
+        }
+        
+        return NoContent();
+    }
 
     // DELETE: api/v1/client/{id}
     [HttpDelete("{id:guid}")]
