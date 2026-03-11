@@ -1,0 +1,21 @@
+erDiagram
+    customers ||--o{ sites : has
+    customers ||--o{ work_orders : requests
+    customers ||--o{ invoices : billed_to
+
+    sites ||--o{ work_orders : location_of
+    sites ||--o{ trip_stops : location_of
+
+    employees ||--o{ work_order_assignments : assigned_to
+    employees ||--o{ trips : drives
+
+    equipment_items ||--o{ work_order_items : included_in
+
+    work_orders ||--o{ work_order_items : contains
+    work_orders ||--o{ work_order_assignments : staffed_by
+    work_orders }o--|| trip_stops : routed_via
+    work_orders |o--|| invoices : billed_on
+
+    trips ||--o{ trip_stops : stops_at
+
+    invoices ||--o{ invoice_lines : consists_of

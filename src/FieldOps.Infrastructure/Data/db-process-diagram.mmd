@@ -1,0 +1,31 @@
+sequenceDiagram
+    participant Admin as Dispatcher (User)
+    participant WO as Table: work_orders
+    participant RES as Table: wo_items
+    participant STAFF as Table: assignments
+    participant LOG as Table: trips & stops
+    participant FIN as Table: invoices
+
+    Note over Admin, FIN: 1. INTAKE (The phone rings)
+    Admin->>WO: INSERT new Work Order (Status: 'DRAFT')
+    Admin->>RES: INSERT Item: "Generator #500" linked to WO
+
+    Note over Admin, FIN: 2. SCHEDULING (Who is doing it?)
+    Admin->>STAFF: INSERT Assignment: "John" (Role: Driver)
+    Admin->>STAFF: INSERT Assignment: "Sarah" (Role: Tech)
+    Admin->>WO: UPDATE Status -> 'SCHEDULED'
+
+    Note over Admin, FIN: 3. ROUTING (How does it get there?)
+    Admin->>LOG: INSERT Trip: "Truck #4" departing at 8:00 AM
+    Admin->>LOG: INSERT Trip Stop: "Acme Concert Site"
+    LOG->>WO: UPDATE WO to link to this Trip Stop
+
+    Note over Admin, FIN: 4. EXECUTION (The work happens)
+    Admin->>WO: UPDATE Status -> 'IN_PROGRESS' (Truck leaves)
+    Admin->>WO: UPDATE Status -> 'COMPLETED' (Job done!)
+    WO->>WO: UPDATE completed_at -> NOW()
+
+    Note over Admin, FIN: 5. BILLING (Show me the money)
+    Admin->>FIN: INSERT Invoice (Linked to Customer)
+    Admin->>FIN: INSERT Invoice Lines (Calculated from WO Items)
+    Admin->>WO: UPDATE invoice_id -> Links to new Invoice

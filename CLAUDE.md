@@ -4,56 +4,90 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-FieldOps.Api is a .NET 9 Web API project that demonstrates modern ASP.NET Core error handling with built-in ProblemDetails support. The solution consists of a single web API project focused on consistent error responses and exception mapping.
+FieldOps.Api is a .NET 9 Web API demonstrating Clean Architecture with EF Core + PostgreSQL, repository/unit-of-work patterns, AutoMapper, and ProblemDetails error handling. It models a bounce castle rental business.
 
 ## Architecture
 
-- **Framework**: .NET 9 Web API with minimal APIs
-- **Error Handling**: Built-in ProblemDetails with custom exception mapping using IExceptionHandler
-- **Structure**: Single project solution with Program.cs containing all configuration
-- **Exception Mapping**: Custom handler maps InvalidOperationException to 409 Conflict responses
-- **Tracing**: All error responses include traceId for debugging
+The solution follows Clean Architecture with 5 projects:
+
+```
+FieldOps.Api (Presentation)
+  └── FieldOps.Application (Use Cases / Interfaces)
+        └── FieldOps.Domain (Pure Domain — no external dependencies)
+FieldOps.Infrastructure (Data Access — depends on Application + Domain)
+FileOps.Tests (XUnit — references FieldOps.Api transitively)
+```
+
+**Key patterns:**
+- **Repository + Unit of Work**: `IRepository<T>` / `GenericRepository<T>` for CRUD; `IUnitOfWork` wraps `SaveChangesAsync()` for atomic operations. Specialized repositories (`IBouncyCastleRepository`, `IClientRepository`) extend the generic interface for future specialty queries.
+- **Service Layer**: `IBouncyCastleService`, `IClientService` handle business logic (GUID generation, audit metadata). Services depend on `IUnitOfWork`.
+- **AutoMapper**: Profiles in `FieldOps.Application`. DTO→Domain mappings ignore `Id` and all audit fields. Community license configured.
+- **DI Registration**: Centralized in `FieldOps.Infrastructure/DependencyInjection.cs` (`AddInfrastructureServices`) and `FieldOps.Application/ApplicationServiceExtensions.cs` (`AddApplicationServices`). All repositories and services are scoped.
+
+**Domain model highlights:**
+- `Product` (abstract) is the base for `BouncyCastle` using **TPC (Table Per Concrete Type)** — `BouncyCastle` gets its own table with all inherited columns.
+- `Size` and `Address` are value object records stored as **EF Core owned entities** (columns embedded in parent table).
+- All entities implementing `ITracker` carry audit fields (`CreatedAt`, `CreatedBy`, `UpdatedAt`, `UpdatedBy`); services populate these (currently hardcoded to `"system"`).
+- `Guid Id` is `ValueGeneratedNever()` — services generate IDs in `CreateAsync()`.
+
+**Error handling:**
+- `InvalidOperationException` is mapped to HTTP 409 Conflict via a sealed `IExceptionHandler` implementation in `Program.cs`.
+- All ProblemDetails responses include a `traceId` field injected via the ProblemDetails customizer.
 
 ## Common Commands
 
 ### Build and Run
 ```bash
-# Build the solution
 dotnet build
+dotnet run --project src/FieldOps.Api
+dotnet run --project src/FieldOps.Api --launch-profile https
+```
 
-# Run the API locally (uses launchSettings.json profiles)
-dotnet run --project FieldOps.Api
+### Database
+```bash
+# Start PostgreSQL + pgAdmin (development)
+cd src/FieldOps.Infrastructure && docker compose up -d
 
-# Run with specific launch profile
-dotnet run --project FieldOps.Api --launch-profile https
+# New migration
+dotnet ef migrations add <Name> --project src/FieldOps.Infrastructure --startup-project src/FieldOps.Api
+
+# Apply migrations
+dotnet ef database update --project src/FieldOps.Infrastructure --startup-project src/FieldOps.Api
 ```
 
 ### Testing
 ```bash
-# Run tests (if test projects exist)
+# Run all tests
 dotnet test
+
+# Run a single test by name
+dotnet test --filter "FullyQualifiedName~<TestMethodName>"
 ```
 
-### Development URLs
-- HTTP: http://localhost:5090
-- HTTPS: https://localhost:7149
+### Environment Variables
+- `MIGRATE_ON_STARTUP=true` — runs EF migrations on startup (used in Docker)
+- `ConnectionStrings__DefaultConnection` — overrides appsettings connection string
 
-### Available Endpoints
-- `/ping` - Health check with runtime info
-- `/healthz` - Simple health status
-- `/boom` - Demo unhandled exception (returns 500)
-- `/conflict` - Demo business rule conflict (returns 409)
+## Development URLs
+- HTTP: http://localhost:5090 | HTTPS: https://localhost:7149
+- Scalar UI: https://localhost:7149/scalar (dev only)
+- OpenAPI JSON: https://localhost:7149/openapi/v1.json (dev only)
+- PostgreSQL: localhost:5433 (postgres/postgres, database: fieldops_dev)
+- pgAdmin: http://localhost:5050 (admin@admin.com / admin)
 
-## Project Structure
+## Available Endpoints
 
-- `Program.cs` - Main application entry point with all service configuration and endpoint definitions
-- `appsettings.json` / `appsettings.Development.json` - Configuration files
-- `Properties/launchSettings.json` - Development server configuration
+**Minimal API (Program.cs):** `GET /ping`, `GET /health`, `GET /ready`, `GET /boom` (demo 500), `GET /conflict` (demo 409)
 
-## Key Features
+**REST Controllers:**
+- `api/v1/bouncycastle` — GET, GET/{id}, POST, PUT/{id}, DELETE/{id}
+- `api/v1/client` — GET, GET/{id}, POST, PUT/{id}, DELETE/{id}
 
-The application demonstrates:
-- Consistent ProblemDetails JSON responses for all errors
-- Custom exception mapping (InvalidOperationException → 409 Conflict)
-- Trace ID injection for debugging
-- Single error handling pipeline for all environments
+## Adding New Entities
+
+The pattern to follow when adding a new domain entity:
+1. **Domain**: Add entity under `src/FieldOps.Domain/<Entity>/`, inherit from `BaseEntity` + implement `ITracker`. For product types, inherit from `Product`.
+2. **Application**: Add `I<Entity>Repository`, `I<Entity>Service`, `<Entity>DTO`, and an AutoMapper profile.
+3. **Infrastructure**: Add `<Entity>Repository : GenericRepository<T>, I<Entity>Repository`. Register in `DependencyInjection.cs`. Add `DbSet<T>` to `FieldOpsDbContext` and configure in `OnModelCreating`.
+4. **Application layer**: Add `<Entity>Service : I<Entity>Service`. Register in `ApplicationServiceExtensions.cs`.
+5. **Api**: Add controller, create migration.
